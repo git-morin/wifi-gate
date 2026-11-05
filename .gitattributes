@@ -1,8 +1,0 @@
-# Android's sh cannot parse CR line endings. Keep every shipped file LF,
-# regardless of what the checkout platform would prefer.
-* text=auto eol=lf
-*.sh text eol=lf
-module.prop text eol=lf
-META-INF/com/google/android/update-binary text eol=lf
-META-INF/com/google/android/updater-script text eol=lf
-*.zip binary

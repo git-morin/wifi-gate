@@ -23,9 +23,6 @@ PAYLOAD=(
 prop() { sed -n "s/^$1=//p" "$ROOT/module.prop" | head -1; }
 die() { echo "build: $*" >&2; exit 1; }
 
-# Android's sh fails on the shebang line if a shipped file carries CR endings.
-strip_cr_endings() { find "$1" -type f -exec sed -i 's/\r$//' {} +; }
-
 ID=$(prop id)
 NAME=$(prop name)
 AUTHOR=$(prop author)
@@ -61,17 +58,12 @@ done
   if [ -n "$UPDATE_JSON" ]; then printf 'updateJson=%s\n' "$UPDATE_JSON"; fi
 } > "$WORK/module.prop"
 
-strip_cr_endings "$WORK"
 chmod 0755 "$WORK"/*.sh "$WORK/META-INF/com/google/android/update-binary"
 
 ZIP=$DIST/$ID-v$VERSION.zip
 rm -f "$ZIP"
-if command -v zip >/dev/null 2>&1; then
-  (cd "$WORK" && zip -q -r -X "$ZIP" .)
-else
-  PY=$(command -v python3 || command -v python) || die "need either zip or python to pack the module"
-  "$PY" "$ROOT/pack.py" "$WORK" "$ZIP"
-fi
+command -v zip >/dev/null || die "zip not found"
+(cd "$WORK" && zip -q -r -X "$ZIP" .)
 
 rm -rf "$WORK"
 echo "$ZIP"

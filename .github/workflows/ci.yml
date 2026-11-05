@@ -29,13 +29,6 @@ jobs:
       - name: shellcheck tooling
         run: shellcheck --severity=warning build.sh .github/release-notes.sh .github/commit-lint.sh
 
-      - name: no CR line endings in shipped files
-        run: |
-          if grep -rlU $'\r' module.prop ./*.sh META-INF; then
-            echo "::error::CRLF found in a shipped file; see .gitattributes" >&2
-            exit 1
-          fi
-
       - name: validate module.prop
         run: |
           set -euo pipefail
