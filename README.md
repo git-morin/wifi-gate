@@ -7,6 +7,7 @@ This aims at preventing an unrooted device (such as those with untethered roots)
 ## Technicals
 
 - Pins `Settings.Global.wifi_on` to `0` and sets the `no_change_wifi_state` user restriction, which Android enforces from disk.
+- Magisk only. KernelSU and APatch are refused at install.
 - An unclean shutdown leaves the switch usable until the next rooted boot.
   - This module should not be the only protection you have against unwarranted updates.
 

@@ -1,6 +1,10 @@
 # shellcheck disable=SC2154
 INSTALLED=/data/adb/modules/wifi_gate
 
+if [ -n "$KSU" ] || [ -n "$APATCH" ]; then
+  abort "! Wi-Fi Gate is Magisk only"
+fi
+
 ui_print "- Wi-Fi Gate: Wi-Fi only while Magisk is loaded"
 set_perm_recursive "$MODPATH" 0 0 0755 0755
 

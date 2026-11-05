@@ -35,4 +35,4 @@ say "Rooted session: Wi-Fi unlocked, restored to $want"
 
 lock_on_clean_shutdown &
 
-exec "$(busybox_bin)" inotifyd "$WIFI_GATE_DIR/on_event.sh" "$SETTINGS_DIR:$WATCH_SETTINGS_SAVED" "$WIFI_GATE_DIR:$WATCH_MODULE_FLAGS"
+exec "$BUSYBOX" inotifyd "$WIFI_GATE_DIR/on_event.sh" "$SETTINGS_DIR:$WATCH_SETTINGS_SAVED" "$WIFI_GATE_DIR:$WATCH_MODULE_FLAGS"

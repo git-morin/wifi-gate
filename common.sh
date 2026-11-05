@@ -3,6 +3,8 @@ LOG=/data/local/tmp/wifi_gate.log
 # shellcheck disable=SC2034
 SETTINGS_DIR=/data/system/users/0
 RESTRICTION=no_change_wifi_state
+# shellcheck disable=SC2034
+BUSYBOX=/data/adb/magisk/busybox
 WIFI_GATE_DIR=${WIFI_GATE_DIR:-/data/adb/modules/wifi_gate}
 STATE_FILE=$WIFI_GATE_DIR/last_wifi_state
 SESSION_FILE=$WIFI_GATE_DIR/.session
@@ -22,13 +24,6 @@ say() {
   /system/bin/log -t "$TAG" "$*" 2>/dev/null
   echo "$(date '+%F %T') $*" >> "$LOG"
   echo "$*"
-}
-
-busybox_bin() {
-  for b in /data/adb/magisk/busybox /data/adb/ksu/bin/busybox; do
-    [ -x "$b" ] && { echo "$b"; return; }
-  done
-  echo busybox
 }
 
 magisk_loaded() {
