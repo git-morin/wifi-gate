@@ -1,0 +1,83 @@
+name: ci
+
+on:
+  push:
+    branches: [main, dev]
+  pull_request:
+    branches: [main, dev]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: shellcheck module scripts
+        # SC1091: common.sh is sourced at a runtime path. SC2154: MODPATH and
+        # friends come from Magisk's installer environment.
+        run: |
+          shellcheck --shell=sh --severity=warning --exclude=SC1091,SC2154 common.sh customize.sh service.sh on_event.sh action.sh uninstall.sh
+
+      - name: shellcheck tooling
+        run: shellcheck --severity=warning build.sh .github/release-notes.sh .github/commit-lint.sh
+
+      - name: no CR line endings in shipped files
+        run: |
+          if grep -rlU $'\r' module.prop ./*.sh META-INF; then
+            echo "::error::CRLF found in a shipped file; see .gitattributes" >&2
+            exit 1
+          fi
+
+      - name: validate module.prop
+        run: |
+          set -euo pipefail
+          for key in id name version versionCode author description; do
+            grep -Eq "^$key=.+" module.prop || { echo "::error::module.prop missing $key" >&2; exit 1; }
+          done
+          id=$(sed -n 's/^id=//p' module.prop)
+          code=$(sed -n 's/^versionCode=//p' module.prop)
+          [[ $id =~ ^[a-zA-Z][a-zA-Z0-9._-]*$ ]] || { echo "::error::bad id '$id'" >&2; exit 1; }
+          [[ $code =~ ^[0-9]+$ ]] || { echo "::error::versionCode must be an integer, got '$code'" >&2; exit 1; }
+          echo "module.prop ok ($id)"
+
+  commits:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+      - name: conventional commits
+        run: .github/commit-lint.sh "${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }}"
+
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - name: build zip
+        id: build
+        run: echo "zip=$(./build.sh)" >> "$GITHUB_OUTPUT"
+      - name: verify every payload entry reached the zip
+        run: |
+          set -euo pipefail
+          unzip -q -o "${{ steps.build.outputs.zip }}" -d /tmp/mod
+          for f in module.prop customize.sh common.sh service.sh on_event.sh action.sh uninstall.sh META-INF/com/google/android/update-binary; do
+            test -f "/tmp/mod/$f" || { echo "::error::zip is missing $f" >&2; exit 1; }
+          done
+          test ! -e /tmp/mod/README.md
+          test ! -e /tmp/mod/.github
+          test ! -e /tmp/mod/pack.py
+          cat /tmp/mod/module.prop
+      - uses: actions/upload-artifact@v4
+        with:
+          name: wifi-gate-zip
+          path: dist/*.zip
+          if-no-files-found: error

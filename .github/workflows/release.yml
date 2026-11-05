@@ -1,0 +1,141 @@
+name: release
+
+on:
+  push:
+    branches: [dev]
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+      REPO: ${{ github.repository }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Resolve channel and version
+        id: meta
+        run: |
+          set -euo pipefail
+          sha=$(git rev-parse --short HEAD)
+          prev=$(git describe --tags --abbrev=0 --match 'v*' "HEAD^" 2>/dev/null || true)
+
+          if [ "$GITHUB_REF_TYPE" = tag ]; then
+            channel=stable
+            version=${GITHUB_REF_NAME#v}
+            tag=$GITHUB_REF_NAME
+            prerelease=false
+            notes_from=$prev
+            update_json=https://github.com/$REPO/releases/latest/download/update.json
+            title="Wi-Fi Gate $version"
+            if git merge-base --is-ancestor HEAD origin/main 2>/dev/null; then
+              echo "tag is on main"
+            else
+              echo "::warning::$tag is not an ancestor of origin/main; main should hold the latest release"
+            fi
+          elif [ "$GITHUB_REF_NAME" = dev ]; then
+            channel=dev
+            base=${prev:-v0.0.0}
+            ahead=$(git rev-list --count "$base..HEAD" 2>/dev/null || git rev-list --count HEAD)
+            version="${base#v}-dev.$ahead-$sha"
+            tag=dev
+            prerelease=true
+            notes_from=$prev
+            update_json=   # prereleases must not advertise in-app updates
+            title="Wi-Fi Gate dev ($version)"
+          else
+            channel=none
+            version="0.0.0-$GITHUB_REF_NAME-$sha"
+            tag=
+            prerelease=true
+            notes_from=$prev
+            update_json=
+            title=
+            echo "::notice::$GITHUB_REF_NAME is not a release ref; building the zip only"
+          fi
+
+          code=$(git rev-list --count HEAD)
+
+          {
+            echo "channel=$channel"
+            echo "version=$version"
+            echo "version_code=$code"
+            echo "tag=$tag"
+            echo "prerelease=$prerelease"
+            echo "notes_from=$notes_from"
+            echo "update_json=$update_json"
+            echo "title=$title"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Build zip
+        id: build
+        run: |
+          set -euo pipefail
+          zip=$(./build.sh '${{ steps.meta.outputs.version }}' '${{ steps.meta.outputs.version_code }}' '${{ steps.meta.outputs.update_json }}')
+          echo "zip=$zip" >> "$GITHUB_OUTPUT"
+          echo "name=$(basename "$zip")" >> "$GITHUB_OUTPUT"
+          unzip -p "$zip" module.prop
+
+      - name: Write release assets
+        id: assets
+        run: |
+          set -euo pipefail
+          zip='${{ steps.build.outputs.zip }}'
+          name='${{ steps.build.outputs.name }}'
+          version='${{ steps.meta.outputs.version }}'
+          code='${{ steps.meta.outputs.version_code }}'
+          tag='${{ steps.meta.outputs.tag }}'
+          sum=$(sha256sum "$zip" | cut -d' ' -f1)
+          (cd dist && sha256sum "$name" > "$name.sha256")
+
+          {
+            .github/release-notes.sh '${{ steps.meta.outputs.notes_from }}' HEAD
+            echo
+            echo '### Install'
+            echo
+            echo "Flash \`$name\` in the Magisk app (Modules > Install from storage), then reboot."
+            echo
+            echo '### Verify'
+            echo
+            echo '```'
+            echo "sha256  $sum"
+            echo '```'
+          } > dist/changelog.md
+
+          if [ '${{ steps.meta.outputs.channel }}' = stable ]; then
+            zip_url="https://github.com/$REPO/releases/download/$tag/$name"
+            log_url="https://github.com/$REPO/releases/latest/download/changelog.md"
+            jq -n --arg version "$version" --argjson versionCode "$code" --arg zipUrl "$zip_url" --arg changelog "$log_url" '{$version, $versionCode, $zipUrl, $changelog}' > dist/update.json
+          fi
+          ls -l dist
+          cat dist/changelog.md
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: wifi-gate-${{ steps.meta.outputs.channel }}
+          path: dist/*
+          if-no-files-found: error
+
+      - name: Publish stable release
+        if: steps.meta.outputs.channel == 'stable'
+        run: |
+          set -euo pipefail
+          gh release create '${{ steps.meta.outputs.tag }}' --title '${{ steps.meta.outputs.title }}' --notes-file dist/changelog.md --target "$GITHUB_SHA" --latest dist/*.zip dist/*.sha256 dist/update.json dist/changelog.md
+
+      - name: Publish rolling dev prerelease
+        if: steps.meta.outputs.channel == 'dev'
+        run: |
+          set -euo pipefail
+          gh release delete dev --yes --cleanup-tag || true
+          gh release create dev --title '${{ steps.meta.outputs.title }}' --notes-file dist/changelog.md --target "$GITHUB_SHA" --prerelease dist/*.zip dist/*.sha256 dist/changelog.md
