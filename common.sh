@@ -1,5 +1,6 @@
 TAG=wifi_gate
 LOG=/data/local/tmp/wifi_gate.log
+LOG_MAX_BYTES=65536
 # shellcheck disable=SC2034
 SETTINGS_DIR=/data/system/users/0
 RESTRICTION=no_change_wifi_state
@@ -22,6 +23,9 @@ WATCH_MODULE_FLAGS=$INOTIFYD_CREATE$INOTIFYD_DELETE
 
 say() {
   /system/bin/log -t "$TAG" "$*" 2>/dev/null
+  if [ -f "$LOG" ] && [ "$(wc -c < "$LOG")" -gt "$LOG_MAX_BYTES" ]; then
+    mv -f "$LOG" "$LOG.old"
+  fi
   echo "$(date '+%F %T') $*" >> "$LOG"
   echo "$*"
 }

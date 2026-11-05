@@ -5,6 +5,10 @@ if [ -n "$KSU" ] || [ -n "$APATCH" ]; then
   abort "! Wi-Fi Gate is Magisk only"
 fi
 
+if [ "${MAGISK_VER_CODE:-0}" -lt 26000 ]; then
+  abort "! Wi-Fi Gate needs Magisk v26.0+ (found ${MAGISK_VER:-unknown})"
+fi
+
 ui_print "- Wi-Fi Gate: Wi-Fi only while Magisk is loaded"
 set_perm_recursive "$MODPATH" 0 0 0755 0755
 
