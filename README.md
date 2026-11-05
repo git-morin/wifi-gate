@@ -28,6 +28,6 @@ There is nothing to configure. Once installed, every boot lands in one of two st
 What you can change:
 
 - **Toggle Wi-Fi normally** during a rooted session. Your last choice is what returns on the next rooted boot, and an unrooted boot still starts off either way.
-- **Action button**, under *Modules* > *Wi-Fi Gate* > *Action* in the Magisk app, toggles Wi-Fi even while the switch is locked, and remembers the new state.
+- **Action button**, under *Modules* > *Wi-Fi Gate* > *Action* in the Magisk app, is a safety valve for rooted devices: it toggles Wi-Fi and remembers the choice even while the switch is locked, such as before the first reboot after install. It runs as root, so it is no help on an unrooted boot.
 - **Disable the module** in the Magisk app to hand Wi-Fi straight back to Android, with no reboot needed. Re-enabling it resumes the gate.
 - **Uninstall** releases the switch the same way, with a fallback on the next boot in case the module was not running.
