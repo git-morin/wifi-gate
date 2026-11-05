@@ -7,7 +7,6 @@ This aims at preventing an unrooted device (such as those with untethered roots)
 ## Technicals
 
 - Pins `Settings.Global.wifi_on` to `0` and sets the `no_change_wifi_state` user restriction, which Android enforces from disk.
-- The Action button toggles Wi-Fi even while locked.
 - An unclean shutdown leaves the switch usable until the next rooted boot.
   - This module should not be the only protection you have against unwarranted updates.
 
@@ -18,3 +17,17 @@ This aims at preventing an unrooted device (such as those with untethered roots)
 3. Reboot.
 
 Installing locks the switch right away, so Wi-Fi keeps its current state until that reboot.
+
+## Usage
+
+There is nothing to configure. Once installed, every boot lands in one of two states:
+
+- **Rooted boot:** the switch works normally, and Wi-Fi comes back as you left it at the last rooted shutdown.
+- **Unrooted boot:** Wi-Fi is off and the toggle is locked. Neither Settings nor adb can turn it on.
+
+What you can change:
+
+- **Toggle Wi-Fi normally** during a rooted session. Your last choice is what returns on the next rooted boot, and an unrooted boot still starts off either way.
+- **Action button**, under *Modules* > *Wi-Fi Gate* > *Action* in the Magisk app, toggles Wi-Fi even while the switch is locked, and remembers the new state.
+- **Disable the module** in the Magisk app to hand Wi-Fi straight back to Android, with no reboot needed. Re-enabling it resumes the gate.
+- **Uninstall** releases the switch the same way, with a fallback on the next boot in case the module was not running.
