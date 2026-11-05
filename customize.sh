@@ -1,3 +1,4 @@
+# shellcheck disable=SC2154
 INSTALLED=/data/adb/modules/wifi_gate
 
 ui_print "- Wi-Fi Gate: Wi-Fi only while Magisk is loaded"

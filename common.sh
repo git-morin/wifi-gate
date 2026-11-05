@@ -1,16 +1,21 @@
 TAG=wifi_gate
 LOG=/data/local/tmp/wifi_gate.log
+# shellcheck disable=SC2034
 SETTINGS_DIR=/data/system/users/0
 RESTRICTION=no_change_wifi_state
 WIFI_GATE_DIR=${WIFI_GATE_DIR:-/data/adb/modules/wifi_gate}
 STATE_FILE=$WIFI_GATE_DIR/last_wifi_state
 SESSION_FILE=$WIFI_GATE_DIR/.session
+# shellcheck disable=SC2034
 WIFI_SETTLE_SEC=2
+# shellcheck disable=SC2034
 SERVICE_SETTLE_SEC=3
 
 INOTIFYD_CREATE=n
 INOTIFYD_DELETE=d
+# shellcheck disable=SC2034
 WATCH_SETTINGS_SAVED=y
+# shellcheck disable=SC2034
 WATCH_MODULE_FLAGS=$INOTIFYD_CREATE$INOTIFYD_DELETE
 
 say() {

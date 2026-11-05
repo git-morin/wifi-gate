@@ -1,5 +1,6 @@
 #!/system/bin/sh
 WIFI_GATE_DIR=$(dirname "$(readlink -f "$0")")
+# shellcheck disable=SC1091
 . "$WIFI_GATE_DIR/common.sh"
 
 if module_off; then echo "Module is disabled or being removed"; exit 0; fi

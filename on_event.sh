@@ -1,5 +1,6 @@
 #!/system/bin/sh
 WIFI_GATE_DIR=$(dirname "$(readlink -f "$0")")
+# shellcheck disable=SC1091
 . "$WIFI_GATE_DIR/common.sh"
 
 event=$1
