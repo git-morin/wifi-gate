@@ -13,6 +13,10 @@ SESSION_FILE=$WIFI_GATE_DIR/.session
 WIFI_SETTLE_SEC=2
 # shellcheck disable=SC2034
 SERVICE_SETTLE_SEC=3
+# shellcheck disable=SC2034
+FRAMEWORK_TIMEOUT_SEC=120
+# shellcheck disable=SC2034
+UNLOCK_ATTEMPTS=10
 
 INOTIFYD_CREATE=n
 INOTIFYD_DELETE=d
@@ -49,6 +53,22 @@ module_off()     { [ -f "$WIFI_GATE_DIR/disable" ] || [ -f "$WIFI_GATE_DIR/remov
 
 lock_wifi()   { pm set-user-restriction "$RESTRICTION" 1 >/dev/null 2>&1; }
 unlock_wifi() { pm set-user-restriction "$RESTRICTION" 0 >/dev/null 2>&1; }
+
+wifi_locked() {
+  dumpsys user 2>/dev/null | sed -n '/UserInfo{0:/,/Device policy restrictions/p' | grep -q "$RESTRICTION"
+}
+
+zygote_pid() { getprop init.svc_debug_pid.zygote; }
+framework_up() { [ -n "$(wifi_now)" ] && pm path android >/dev/null 2>&1; }
+
+wait_for_framework() {
+  i=0
+  until framework_up; do
+    i=$((i + 1))
+    [ "$i" -ge "$FRAMEWORK_TIMEOUT_SEC" ] && return 1
+    sleep 1
+  done
+}
 
 set_wifi() {
   case $1 in
