@@ -1,6 +1,6 @@
 id=wifi_gate
 name=Wi-Fi Gate
-version=2.0.1
-versionCode=4
+version=1.0.0
+versionCode=14
 author=git-morin
 description=Wi-Fi only while Magisk is loaded. Without root, Wi-Fi boots off and its switch is locked. With root, the switch is unlocked and Wi-Fi is restored to its last rooted state, while the saved state stays off for the next boot.
