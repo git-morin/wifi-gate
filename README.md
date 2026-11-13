@@ -12,12 +12,13 @@ Some roots, like the semi-tethered ones, are lost on every reboot. Until you roo
 - Magisk v26.0+ only. Older Magisk, KernelSU and APatch are refused at install.
 - Logs to `/data/local/tmp/wifi_gate.log`, rotated to `wifi_gate.log.old` past 64 KiB.
 - On an unrooted boot, neither Settings nor `adb shell` can lift the restriction, since it needs `MANAGE_USERS`.
+- Never locks ahead of a pending update. If `bootctl` reports a slot switch for the next boot, `update_engine` finished an update this boot, or the boot slots can't be read, shutdown leaves Wi-Fi normal instead. Otherwise the lock could land on firmware the exploit no longer supports, and only a factory reset would clear it.
 
 ### What it does not cover
 
 Wi-Fi Gate blocks one path: Wi-Fi during an unrooted boot. **Don't rely on it alone to block unwanted updates.** These remain open:
 
-- **Rooted sessions.** Wi-Fi works normally while rooted, and the module leaves the system updater alone. An A/B update can download and install to the inactive slot in the background, then take over at the next reboot, rooted or not. **Block any updates / servers that hold them in your root session**.
+- **Rooted sessions.** Wi-Fi works normally while rooted, and the module leaves the system updater alone. An A/B update can download and install to the inactive slot in the background, then take over at the next reboot, rooted or not. Wi-Fi Gate then skips the lock so the updated headset keeps working Wi-Fi, but it can't stop the update itself. **Block any updates / servers that hold them in your root session**.
 - **Unclean shutdowns.** The switch is only locked at a clean shutdown. After a crash, a forced restart or a dead battery, the next unrooted boot still starts with Wi-Fi off, but anyone can turn it back on until you root again.
 - **Other networks.** The restriction covers Wi-Fi only, not a USB Ethernet adapter or Bluetooth and USB tethering.
 - **Factory reset.** Wiping `/data` erases the restriction and the saved state, and the setup wizard asks for Wi-Fi and updates before anything else.
