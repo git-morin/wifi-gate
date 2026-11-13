@@ -9,6 +9,8 @@ BUSYBOX=/data/adb/magisk/busybox
 WIFI_GATE_DIR=${WIFI_GATE_DIR:-/data/adb/modules/wifi_gate}
 STATE_FILE=$WIFI_GATE_DIR/last_wifi_state
 SESSION_FILE=$WIFI_GATE_DIR/.session
+RELEASED_FILE=$WIFI_GATE_DIR/.released
+UE_COMPLETED=/data/misc/update_engine/prefs/update-completed-on-boot-id
 # shellcheck disable=SC2034
 WIFI_SETTLE_SEC=2
 # shellcheck disable=SC2034
@@ -50,6 +52,25 @@ wait_for_shutdown() { resetprop -w sys.shutdown.requested "" >/dev/null 2>&1; }
 boot_id()        { cat /proc/sys/kernel/random/boot_id; }
 session_active() { [ "$(cat "$SESSION_FILE" 2>/dev/null)" = "$(boot_id)" ]; }
 module_off()     { [ -f "$WIFI_GATE_DIR/disable" ] || [ -f "$WIFI_GATE_DIR/remove" ]; }
+released()       { [ "$(cat "$RELEASED_FILE" 2>/dev/null)" = "$(boot_id)" ]; }
+
+# Prints why the next boot may run firmware the exploit no longer supports,
+# or nothing if it is safe to lock. Anything it cannot read counts as pending,
+# since a lock that outlives root can only be cleared by a factory reset.
+pending_update() {
+  cur=$(bootctl get-current-slot 2>/dev/null)
+  next=$(bootctl get-active-boot-slot 2>/dev/null)
+  case "$cur:$next" in
+    *[!0-9:]* | :* | *:) echo "boot slots unreadable ('$cur' -> '$next')"; return ;;
+  esac
+  if [ "$cur" != "$next" ]; then
+    echo "boot slot switches from $cur to $next"
+    return
+  fi
+  if [ "$(cat "$UE_COMPLETED" 2>/dev/null)" = "$(boot_id)" ]; then
+    echo "update_engine finished an update this boot"
+  fi
+}
 
 lock_wifi()   { pm set-user-restriction "$RESTRICTION" 1 >/dev/null 2>&1; }
 unlock_wifi() { pm set-user-restriction "$RESTRICTION" 0 >/dev/null 2>&1; }

@@ -10,6 +10,13 @@ lock_on_clean_shutdown() {
     say "Shutdown with module disabled/removed: Wi-Fi left normal"
     return
   fi
+  reason=$(pending_update)
+  if [ -n "$reason" ]; then
+    boot_id > "$RELEASED_FILE"
+    release_wifi
+    say "Shutdown with a pending update ($reason): Wi-Fi left normal, not locked"
+    return
+  fi
   record_state
   lock_wifi
   persist_off

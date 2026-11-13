@@ -23,6 +23,7 @@ fi
 
 [ "$filename" = settings_global.xml ] || exit 0
 module_off && exit 0
+released && exit 0
 
 saved=$(settings get global wifi_on)
 if [ "$saved" != 0 ]; then
